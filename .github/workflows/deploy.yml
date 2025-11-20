@@ -1,37 +1,54 @@
 name: Deploy to GitHub Pages
 
-on:
+on: 
   push:
-    branches: [ easy ]
+    branches:
+      - easy
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          version: 8
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+          version: latest
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
-      
+          node-version: "22"
+          cache: "pnpm"
+
       - name: Install dependencies
-        run: pnpm install
-      
+        run: pnpm install --frozen-lockfile
+
       - name: Build
-        run: pnpm build
-      
+        run: pnpm run build
+
       - name: Create 404.html for SPA routing
-        run: cp ./dist/index.html ./dist/404.html
-      
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+        run: |
+          cp ./dist/index.html ./dist/404.html
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          path: "./dist"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
